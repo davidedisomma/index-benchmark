@@ -1,0 +1,37 @@
+<project name="HelloWorld" default="reveng.hbmxml" basedir=".">
+ <!-- Name of project and version -->
+
+<property name="proj.name"  value="HelloWorld"/>
+<property name="proj.version"  value="1.0"/>
+<!-- Global properties for this build -->
+<property name="src.java.dir"  value="src"/>
+<property name="lib.dir"  value="lib"/>
+<property name="build.dir" value="bin"/>
+
+<!-- Classpath declaration --> 
+<path id="project.classpath">
+<fileset dir="${lib.dir}">
+ <include name="**/*.jar"/>
+ <include name="**/*.zip"/>
+</fileset>
+</path>
+
+<taskdef name="hibernatetool" classname="org.hibernate.tool.ant.HibernateToolTask" classpathref="project.classpath"/>
+
+<target name="reveng.hbmxml" description="Produces XML mapping files in src directory">
+<hibernatetool destdir="${basedir}/src">
+<jdbcconfiguration propertyfile="${basedir}/itwiki.db.properties" />
+<hbm2hbmxml/> <!-- Export Hibernate XML files -->
+ <hbm2cfgxml/> <!-- Export a hibernate.cfg.xml file -->
+</hibernatetool> 
+</target>
+
+<target name="reveng.pojos" description="Produces Java classes from XML mappings">
+<hibernatetool destdir="${basedir}/src">
+ <configuration>
+ <fileset dir="${basedir}/src"> <include name="**/*.hbm.xml"/>
+</fileset> </configuration>
+<hbm2java/> <!-- Generate entity class source --> </hibernatetool>
+</target>
+
+</project>
