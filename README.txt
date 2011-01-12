@@ -1,25 +1,26 @@
-Passi da eseguire. Documento di riferimento si trova all'url http://it.wikipedia.org/wiki/Aiuto:Analisi_del_database
+This is a tool to setup a big database and Apache Lucene index to load test some index usage.
 
-1- Installare versione di Mysql
+In particular, we aim to provide reproducible load tests for:
+ * Hibernate Search - http://search.hibernate.org/
+ * Infinispan's distributed Lucene Directory implementation - http://infinispan.org/ - http://community.jboss.org/wiki/infinispanasadirectoryforlucene
 
-2- Creare utente secondo le istruzioni di questo link http://dev.mysql.com/doc/refman/5.1/en/adding-users.html
+As a source of documents to index we use a specific dump of the Wikipedia database.
 
-3- Creare database come spiegato nel documento di riferimento 
+1 - Setup a MySQL database, create users: http://dev.mysql.com/doc/refman/5.1/en/adding-users.html
 
-4- Scaricare mwdumper.jar per importare velocemente grandi quantità di dati. Ocio che la versione buona è di questo link 
-http://downloads.dbpedia.org/mwdumper.jar 
-come segnalato in questo link 
-https://bugzilla.wikimedia.org/show_bug.cgi?id=18328
-A questo url ci sono anche le istruzioni
-http://www.mediawiki.org/wiki/Manual:MWDumper
+2 - Prepare database as described on http://en.wikipedia.org/wiki/Wikipedia:Database_download
 
-5- Scaricare da 
-http://svn.wikimedia.org/viewvc/mediawiki/trunk/phase3/maintenance/tables.sql?view=co
+3 - Use mwdumper.jar do efficiently import this large database http://downloads.dbpedia.org/mwdumper.jar,
+    use as explained on
+	https://bugzilla.wikimedia.org/show_bug.cgi?id=18328
+	http://www.mediawiki.org/wiki/Manual:MWDumper
 
-le tabelle del DB e crearle su MySql seguendo i consigli del manuale di riferimento
+5 - Get and apply the schema to your new database
+	http://svn.wikimedia.org/viewvc/mediawiki/trunk/phase3/maintenance/tables.sql?view=co
 
-6-Scaricare il dump xml dall'url
-http://download.wikimedia.org/enwiki/20101011/pages-meta-current.xml.bz2
+6 - Download the reference wikipedia dump, containing only last version of each article, in English only:
+	http://download.wikimedia.org/enwiki/20101011/pages-meta-current.xml.bz2
+	[WARNING! 12GB sized download]
 
-7-Eseguire 
-java -jar mwdumper.jar --format=sql:1.5 itwiki-latest-pages-meta-current.xml.bz2 | mysql -u<utente> -p itwiki
+7 - Execute data import:
+	java -jar mwdumper.jar --format=sql:1.5 pages-meta-current.xml.bz2 | mysql -u<username> -p <databasename>
