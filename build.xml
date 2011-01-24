@@ -94,20 +94,10 @@
         <!-- add more as needed here -->
     </filterset>
 
-    <target name="test">
-        <delete dir="${database.lowercasename}" >
-            <include name="*.sql" />
-        </delete>
-        <copy todir="${sqlscripts.rootdir}" filtering="true">
-            <fileset dir="${sqlscripts.rootdir}/${database.lowercasename}" includes="*.sql" />
-            <filterset refid="sql-filters" />
-        </copy>
-    </target>
-
     <macrodef name="sqlimport">
         <attribute name="script" />
         <sequential>
-            <delete dir="${database.lowercasename}" >
+            <delete dir="${sqlscripts.rootdir}" >
                 <include name="*.sql" />
             </delete>
             <copy todir="${sqlscripts.rootdir}" filtering="true">
@@ -116,6 +106,9 @@
             </copy>
             <sqlimport-helper rdbms="postgresql" driver.refid="postgres-jdbclib.path.id" sql.script="@{script}" />
             <sqlimport-helper rdbms="mysql"      driver.refid="mysql-jdbclib.path.id"    sql.script="@{script}" />
+            <delete dir="${sqlscripts.rootdir}" >
+                <include name="*.sql" />
+            </delete>
         </sequential>
     </macrodef>
 
