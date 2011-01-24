@@ -31,13 +31,13 @@ public class WikipediaMassIndexer {
 		try {
 			massIndexer
 					.purgeAllOnStart(true)
-					// true by default, highly recommended
 					.optimizeAfterPurge(true)
-					// true is default, saves some disk space
 					.optimizeOnFinish(true)
-					// true by default
-					.batchSizeToLoadObjects(30).threadsForSubsequentFetching(8)
-					.threadsToLoadObjects(4).cacheMode(CacheMode.NORMAL)
+					.batchSizeToLoadObjects(30)
+					.threadsForSubsequentFetching(4)
+					.threadsToLoadObjects(8)
+					.threadsForIndexWriter( 6 )
+					.cacheMode(CacheMode.IGNORE)
 					.startAndWait();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block

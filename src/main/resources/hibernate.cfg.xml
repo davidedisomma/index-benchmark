@@ -6,9 +6,9 @@
     <session-factory>
         <property name="hibernate.bytecode.use_reflection_optimizer">false</property>
         <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
-        <property name="hibernate.connection.password">itwiki</property>
-        <property name="hibernate.connection.url">jdbc:mysql://localhost/itwiki</property>
-        <property name="hibernate.connection.username">itwiki</property>
+        <property name="hibernate.connection.password">jboss-password</property>
+        <property name="hibernate.connection.url">jdbc:mysql://localhost/jbossdb</property>
+        <property name="hibernate.connection.username">jboss-username</property>
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
         <mapping class="com.ucieffe.model.Text" />
     </session-factory>

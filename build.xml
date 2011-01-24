@@ -1,37 +1,152 @@
-<project name="HelloWorld" default="reveng.hbmxml" basedir=".">
- <!-- Name of project and version -->
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one
+   or more contributor license agreements.  See the NOTICE file
+   distributed with this work for additional information
+   regarding copyright ownership.  The ASF licenses this file
+   to you under the Apache License, Version 2.0 (the
+   "License"); you may not use this file except in compliance
+   with the License.  You may obtain a copy of the License at
 
-<property name="proj.name"  value="HelloWorld"/>
-<property name="proj.version"  value="1.0"/>
-<!-- Global properties for this build -->
-<property name="src.java.dir"  value="src"/>
-<property name="lib.dir"  value="lib"/>
-<property name="build.dir" value="bin"/>
+     http://www.apache.org/licenses/LICENSE-2.0
 
-<!-- Classpath declaration --> 
-<path id="project.classpath">
-<fileset dir="${lib.dir}">
- <include name="**/*.jar"/>
- <include name="**/*.zip"/>
-</fileset>
-</path>
+   Unless required by applicable law or agreed to in writing,
+   software distributed under the License is distributed on an
+   "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+   KIND, either express or implied.  See the License for the
+   specific language governing permissions and limitations
+   under the License.
+   
+   Copyright (C) 2011 Sanne Grinovero - sanne@hibernate.org
+-->
+<project name="index-benchmark" xmlns:ivy="antlib:org.apache.ivy.ant">
 
-<taskdef name="hibernatetool" classname="org.hibernate.tool.ant.HibernateToolTask" classpathref="project.classpath"/>
+    <property name="ivy.install.version" value="2.2.0" />
 
-<target name="reveng.hbmxml" description="Produces XML mapping files in src directory">
-<hibernatetool destdir="${basedir}/src">
-<jdbcconfiguration propertyfile="${basedir}/itwiki.db.properties" />
-<hbm2hbmxml/> <!-- Export Hibernate XML files -->
- <hbm2cfgxml/> <!-- Export a hibernate.cfg.xml file -->
-</hibernatetool> 
-</target>
+    <property name="build.dir" value="build" />
+    <property name="cache.dir" value="${basedir}/downloads-cache" />
+    <property name="sqlscripts.rootdir" value="${basedir}/sql" />
+    <property name="ivy.jar.file" value="${cache.dir}/ivy.jar" />
+    <property name="mwdir.jar.file" value="${cache.dir}/mwdumper.jar" />
+    <property name="mwdir.download.url" value="file://mwdumper.jar" /> <!-- TODO fill in remote URL -->
+    <property name="wikipedia.download.url" value="http://download.wikimedia.org/enwiki/20101011/pages-meta-current.xml.bz2" />
+    <property name="wikipedia.download.file" value="${cache.dir}/wiki-pages.xml.bz2" />
+    <property name="src.dir" value="src" />
 
-<target name="reveng.pojos" description="Produces Java classes from XML mappings">
-<hibernatetool destdir="${basedir}/src">
- <configuration>
- <fileset dir="${basedir}/src"> <include name="**/*.hbm.xml"/>
-</fileset> </configuration>
-<hbm2java/> <!-- Generate entity class source --> </hibernatetool>
-</target>
+    <property file="db.properties" />
+
+    <target name="download-ivy">
+        <mkdir dir="${cache.dir}" />
+        <!-- download Ivy from web site so that it can be used even without any special installation -->
+        <echo message="Downloading Ivy..." />
+        <get
+            src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+            dest="${ivy.jar.file}"
+            usetimestamp="true"
+            skipexisting="true" />
+    </target>
+
+    <target name="install-ivy" depends="download-ivy" description="--> install ivy">
+        <path id="ivy.lib.path">
+            <fileset dir="${cache.dir}" includes="ivy.jar" />
+        </path>
+        <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+    </target>
+
+    <target name="have-jdbc-driver" depends="install-ivy">
+        <ivy:cachepath organisation="mysql" module="mysql-connector-java" revision="5.1.14" pathid="mysql-jdbclib.path.id" inline="true" />
+        <!-- TODO: Insert PostgreSQL driver in placeholder: -->
+        <ivy:cachepath organisation="mysql" module="mysql-connector-java" revision="5.1.14" pathid="postgres-jdbclib.path.id" inline="true" />
+    </target>
+
+    <target name="drop-alltables" depends="have-jdbc-driver">
+        <sqlimport script="truncateall.sql" />
+    </target>
+
+    <target name="have-empty-schema" depends="drop-alltables" description="Create all required tables, removing all existing data">
+        <sqlimport script="schemagen.sql" />
+    </target>
+
+    <target name="schema-add-indexes" description="Add indexes to tables" depends="have-jdbc-driver">
+        <!-- During the data import process we have no indexes to speed up writing -->
+        <!-- TODO find out if some indexes make sense to have during import -->
+        <sqlimport script="indexes.sql" />
+    </target>
+
+    <target name="clean" description="--> clean the project">
+        <delete includeemptydirs="true" quiet="true">
+            <fileset dir="${src.dir}" />
+            <fileset dir="${build.dir}" />
+        </delete>
+    </target>
+
+    <target name="clean-cache" depends="install-ivy" description="--> clean the ivy cache">
+        <ivy:cleancache />
+        <!--TODO remove Ivy & mwdumper & Wikipedia dumps & database data but ASK FOR CONFIRMATION unless some automation property is set -->
+    </target>
+
+    <target name="import-wikipedia" depends="download-mwdumper-tool,download-wikipedia,have-empty-schema" description="--> clean the ivy cache">
+        <!--TODO invoke mwdumper with appropriate parameters -->
+    </target>
+
+    <!-- Define filtering applied to SQL scripts -->
+    <filterset id="sql-filters">
+        <filter token="jdbc.schemaname" value="${jdbc.schemaname}" />
+        <!-- add more as needed here -->
+    </filterset>
+
+    <target name="test">
+        <delete dir="${database.lowercasename}" >
+            <include name="*.sql" />
+        </delete>
+        <copy todir="${sqlscripts.rootdir}" filtering="true">
+            <fileset dir="${sqlscripts.rootdir}/${database.lowercasename}" includes="*.sql" />
+            <filterset refid="sql-filters" />
+        </copy>
+    </target>
+
+    <macrodef name="sqlimport">
+        <attribute name="script" />
+        <sequential>
+            <delete dir="${database.lowercasename}" >
+                <include name="*.sql" />
+            </delete>
+            <copy todir="${sqlscripts.rootdir}" filtering="true">
+                <fileset dir="${sqlscripts.rootdir}/${database.lowercasename}" includes="*.sql" />
+                <filterset refid="sql-filters" />
+            </copy>
+            <sqlimport-helper rdbms="postgresql" driver.refid="postgres-jdbclib.path.id" sql.script="@{script}" />
+            <sqlimport-helper rdbms="mysql"      driver.refid="mysql-jdbclib.path.id"    sql.script="@{script}" />
+        </sequential>
+    </macrodef>
+
+    <macrodef name="sqlimport-helper">
+        <attribute name="rdbms" />
+        <attribute name="driver.refid" />
+        <attribute name="sql.script" />
+        <sequential>
+            <sql
+                driver="${jdbc.driver_class}"
+                password="${jdbc.password}"
+                url="${jdbc.url}"
+                userid="${jdbc.username}"
+                rdbms="@{rdbms}"
+                encoding="UTF-8"
+                src="${sqlscripts.rootdir}/@{sql.script}">
+                    <classpath refid="@{driver.refid}" />
+            </sql>
+        </sequential>
+    </macrodef>
+
+    <target name="download-mwdumper-tool">
+        <echo message="Downloading mwdumper..." />
+        <get dest="${mwdir.jar.file}" src="${mwdir.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
+    </target>
+
+    <target name="download-wikipedia">
+        <echo message="Downloading Wikipedia (will take a while!) ..." />
+        <get dest="${wikipedia.download.file}" src="${wikipedia.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
+        <echo message="... got it!" />
+    </target>
 
 </project>
+
