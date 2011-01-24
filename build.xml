@@ -27,7 +27,7 @@
     <property name="sqlscripts.rootdir" value="${basedir}/sql" />
     <property name="ivy.jar.file" value="${cache.dir}/ivy.jar" />
     <property name="mwdir.jar.file" value="${cache.dir}/mwdumper.jar" />
-    <property name="mwdir.download.url" value="file://mwdumper.jar" /> <!-- TODO fill in remote URL -->
+    <property name="mwdir.download.url" value="http://downloads.dbpedia.org/mwdumper.jar" />
     <property name="wikipedia.download.url" value="http://download.wikimedia.org/enwiki/20101011/pages-meta-current.xml.bz2" />
     <property name="wikipedia.download.file" value="${cache.dir}/wiki-pages.xml.bz2" />
     <property name="src.dir" value="src" />
