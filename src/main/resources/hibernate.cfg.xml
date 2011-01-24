@@ -10,6 +10,8 @@
         <property name="hibernate.connection.url">jdbc:mysql://localhost/jbossdb</property>
         <property name="hibernate.connection.username">jboss-username</property>
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+        <property name="hibernate.search.default.indexwriter.batch.ram_buffer_size">300</property>
+        <property name="hibernate.search.default.indexwriter.batch.merge_factor">30</property>
         <mapping class="com.ucieffe.model.Text" />
     </session-factory>
 </hibernate-configuration>

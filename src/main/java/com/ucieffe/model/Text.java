@@ -10,7 +10,7 @@ import org.hibernate.search.annotations.Indexed;
 
 @Entity
 @Table(name="text")
-@Indexed
+@Indexed(index="index")
 public class Text implements java.io.Serializable {
 
 	private static final long serialVersionUID = -3646271383125946501L;
