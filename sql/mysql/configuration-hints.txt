@@ -1,0 +1,21 @@
+[mysqld]
+#pick a partition with enough disk space!
+#datadir=/home/mysql
+socket=/var/lib/mysql/mysql.sock
+user=mysql
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links=0
+innodb_flush_log_at_trx_commit = 0
+innodb_support_xa = false
+innodb_log_buffer_size = 33554432
+innodb_buffer_pool_size = 268435456
+innodb_checksums = off
+innodb_log_file_size = 64M
+max_allowed_packet=16M
+net_buffer_length=262144
+default-character-set=utf8
+innodb_autoextend_increment = 512M
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
