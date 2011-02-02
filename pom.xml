@@ -18,7 +18,7 @@
     </licenses>
     <properties>
         <slf4jVersion>1.6.1</slf4jVersion>
-        <infinispanVersion>4.2.1.CR1</infinispanVersion>
+        <infinispanVersion>4.2.1-SNAPSHOT</infinispanVersion>
         <hibernateVersion>3.6.0.Final</hibernateVersion>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -27,6 +27,26 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-search</artifactId>
             <version>3.4.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-search-infinispan</artifactId>
+            <version>3.4.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-lucene-directory</artifactId>
+            <version>${infinispanVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-core</artifactId>
+            <version>${infinispanVersion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-cachestore-jdbc</artifactId>
+            <version>${infinispanVersion}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
