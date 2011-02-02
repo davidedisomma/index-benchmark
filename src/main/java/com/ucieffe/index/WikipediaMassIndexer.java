@@ -23,17 +23,17 @@ public class WikipediaMassIndexer {
 		EntityManager entityManager = entityManagerFactory.createEntityManager();
 		FullTextEntityManager ftEntityManager = new FullTextEntityManagerImpl( entityManager );
 
-		MassIndexerProgressMonitor monitor = new SimpleIndexingProgressMonitor( 500 );
+		MassIndexerProgressMonitor monitor = new SimpleIndexingProgressMonitor( 1500 );
 		MassIndexer massIndexer = ftEntityManager.createIndexer( Text.class );
 		try {
 			massIndexer
 					.purgeAllOnStart( true )
 					.optimizeAfterPurge( true )
 					.optimizeOnFinish( true )
-					.batchSizeToLoadObjects( 25 )
-					.threadsForSubsequentFetching( 2 )
-					.threadsToLoadObjects( 6 )
-					.threadsForIndexWriter( 6 )
+					.batchSizeToLoadObjects( 35 )
+					.threadsForSubsequentFetching( 3 )
+					.threadsToLoadObjects( 8 )
+					.threadsForIndexWriter( 4 )
 					.progressMonitor( monitor )
 					.cacheMode( CacheMode.IGNORE )
 					.startAndWait();
