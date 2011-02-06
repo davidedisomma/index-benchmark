@@ -18,128 +18,181 @@
    
    Copyright (C) 2011 Sanne Grinovero - sanne@hibernate.org
 -->
-<project name="index-benchmark" xmlns:ivy="antlib:org.apache.ivy.ant">
+<project name="index-benchmark" xmlns:ivy="antlib:org.apache.ivy.ant" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 
-    <property name="ivy.install.version" value="2.2.0" />
+	<property name="ivy.install.version" value="2.2.0" />
+	<property name="maven-ant-tasks.install.version" value="2.1.1" />
 
-    <property name="build.dir" value="build" />
-    <property name="cache.dir" value="${basedir}/downloads-cache" />
-    <property name="sqlscripts.rootdir" value="${basedir}/sql" />
-    <property name="ivy.jar.file" value="${cache.dir}/ivy.jar" />
-    <property name="mwdir.jar.file" value="${cache.dir}/mwdumper.jar" />
-    <property name="mwdir.download.url" value="http://downloads.dbpedia.org/mwdumper.jar" />
-    <property name="wikipedia.download.url" value="http://download.wikimedia.org/enwiki/20101011/pages-meta-current.xml.bz2" />
-    <property name="wikipedia.download.file" value="${cache.dir}/wiki-pages.xml.bz2" />
-    <property name="src.dir" value="src" />
+	<property name="build.dir" value="build" />
+	<property name="cache.dir" value="${basedir}/downloads-cache" />
+	<property name="sqlscripts.rootdir" value="${basedir}/sql" />
+	<property name="ivy.jar.file" value="${cache.dir}/ivy.jar" />
+	<property name="maven-ant-tasks.jar.file" value="${cache.dir}/maven-ant-tasks.jar" />
+	<property name="mwdir.jar.file" value="${cache.dir}/mwdumper.jar" />
+	<property name="mwdir.download.url" value="http://downloads.dbpedia.org/mwdumper.jar" />
+	<property name="wikipedia.download.url" value="http://download.wikimedia.org/enwiki/20101011/enwiki-20101011-pages-meta-current.xml.bz2" />
+	<property name="wikipedia.download.file" value="${cache.dir}/wiki-pages.xml.bz2" />
+	<property name="src.dir" value="src" />
 
-    <property file="db.properties" />
+	<property file="db.properties" />
 
-    <target name="download-ivy">
-        <mkdir dir="${cache.dir}" />
-        <!-- download Ivy from web site so that it can be used even without any special installation -->
-        <echo message="Downloading Ivy..." />
-        <get
-            src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
-            dest="${ivy.jar.file}"
-            usetimestamp="true"
-            skipexisting="true" />
-    </target>
 
-    <target name="install-ivy" depends="download-ivy" description="--> install ivy">
-        <path id="ivy.lib.path">
-            <fileset dir="${cache.dir}" includes="ivy.jar" />
-        </path>
-        <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
-    </target>
 
-    <target name="have-jdbc-driver" depends="install-ivy">
-        <ivy:cachepath organisation="mysql" module="mysql-connector-java" revision="5.1.14" pathid="mysql-jdbclib.path.id" inline="true" />
-        <!-- TODO: Insert PostgreSQL driver in placeholder: -->
-        <ivy:cachepath organisation="mysql" module="mysql-connector-java" revision="5.1.14" pathid="postgres-jdbclib.path.id" inline="true" />
-    </target>
+	<target name="download-ivy">
+		<mkdir dir="${cache.dir}" />
+		<!-- download Ivy from web site so that it can be used even without any special installation -->
+		<echo message="Downloading Ivy..." />
+		<get src="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" dest="${ivy.jar.file}" usetimestamp="true" skipexisting="true" />
+	</target>
 
-    <target name="drop-alltables" depends="have-jdbc-driver">
-        <sqlimport script="truncateall.sql" />
-    </target>
+	<target name="download-maven-ant-tasks">
+		<mkdir dir="${cache.dir}" />
+		<echo message="Downloading Maven-Ant-Tasks..." />
+		<get src="http://repo1.maven.org/maven2/org/apache/maven/maven-ant-tasks/${maven-ant-tasks.install.version}/maven-ant-tasks-${maven-ant-tasks.install.version}.jar" dest="${maven-ant-tasks.jar.file}" usetimestamp="true" skipexisting="true" />
+	</target>
 
-    <target name="have-empty-schema" depends="drop-alltables" description="Create all required tables, removing all existing data">
-        <sqlimport script="schemagen.sql" />
-    </target>
+	<target name="install-ivy" depends="download-ivy" description="--> install ivy">
+		<path id="ivy.lib.path">
+			<fileset dir="${cache.dir}" includes="ivy.jar" />
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+	</target>
 
-    <target name="schema-add-indexes" description="Add indexes to tables" depends="have-jdbc-driver">
-        <!-- During the data import process we have no indexes to speed up writing -->
-        <!-- TODO find out if some indexes make sense to have during import -->
-        <sqlimport script="indexes.sql" />
-    </target>
+	<target name="have-jdbc-driver" depends="install-ivy">
+		<!-- TODO: Insert PostgreSQL driver in placeholder: -->
+		<ivy:cachepath organisation="${database.lowercasename}" module="${jdbc.module}" revision="${jdbc.revision}" pathid="${database.lowercasename}-jdbclib.path.id" inline="true" />
+	</target>
 
-    <target name="clean" description="--> clean the project">
-        <delete includeemptydirs="true" quiet="true">
-            <fileset dir="${src.dir}" />
-            <fileset dir="${build.dir}" />
-        </delete>
-    </target>
+	<target name="drop-alltables" depends="have-jdbc-driver">
+		<sqlimport script="truncateall.sql" />
+	</target>
 
-    <target name="clean-cache" depends="install-ivy" description="--> clean the ivy cache">
-        <ivy:cleancache />
-        <!--TODO remove Ivy & mwdumper & Wikipedia dumps & database data but ASK FOR CONFIRMATION unless some automation property is set -->
-    </target>
+	<target name="have-empty-schema" depends="drop-alltables" description="Create all required tables, removing all existing data">
+		<sqlimport script="schemagen.sql" />
+	</target>
 
-    <target name="import-wikipedia" depends="download-mwdumper-tool,download-wikipedia,have-empty-schema" description="--> clean the ivy cache">
-        <!--TODO invoke mwdumper with appropriate parameters -->
-    </target>
+	<target name="schema-add-indexes" description="Add indexes to tables" depends="have-jdbc-driver">
+		<!-- During the data import process we have no indexes to speed up writing -->
+		<!-- TODO find out if some indexes make sense to have during import -->
+		<sqlimport script="indexes.sql" />
+	</target>
 
-    <!-- Define filtering applied to SQL scripts -->
-    <filterset id="sql-filters">
-        <filter token="jdbc.schemaname" value="${jdbc.schemaname}" />
-        <!-- add more as needed here -->
-    </filterset>
+	<target name="clean" description="--> clean the project">
+		<delete includeemptydirs="true" quiet="true">
+			<fileset dir="${src.dir}" />
+			<fileset dir="${build.dir}" />
+		</delete>
+	</target>
 
-    <macrodef name="sqlimport">
-        <attribute name="script" />
-        <sequential>
-            <delete dir="${sqlscripts.rootdir}" >
-                <include name="*.sql" />
-            </delete>
-            <copy todir="${sqlscripts.rootdir}" filtering="true">
-                <fileset dir="${sqlscripts.rootdir}/${database.lowercasename}" includes="*.sql" />
-                <filterset refid="sql-filters" />
-            </copy>
-            <sqlimport-helper rdbms="postgresql" driver.refid="postgres-jdbclib.path.id" sql.script="@{script}" />
-            <sqlimport-helper rdbms="mysql"      driver.refid="mysql-jdbclib.path.id"    sql.script="@{script}" />
-            <delete dir="${sqlscripts.rootdir}" >
-                <include name="*.sql" />
-            </delete>
-        </sequential>
-    </macrodef>
+	<target name="ask-cleaning" unless="dont.ask">
+		<input message="All downloaded files and all DB data are going to be deleted. Continue (y/n)?" validargs="y,n" addproperty="do.delete" />
+		<condition property="do.abort">
+			<equals arg1="n" arg2="${do.delete}" />
+		</condition>
+		<fail if="do.abort">Build aborted by user.</fail>
+	</target>
 
-    <macrodef name="sqlimport-helper">
-        <attribute name="rdbms" />
-        <attribute name="driver.refid" />
-        <attribute name="sql.script" />
-        <sequential>
-            <sql
-                driver="${jdbc.driver_class}"
-                password="${jdbc.password}"
-                url="${jdbc.url}"
-                userid="${jdbc.username}"
-                rdbms="@{rdbms}"
-                encoding="UTF-8"
-                src="${sqlscripts.rootdir}/@{sql.script}">
-                    <classpath refid="@{driver.refid}" />
-            </sql>
-        </sequential>
-    </macrodef>
+	<target name="clean-cache" depends="ask-cleaning,install-ivy" description="--> clean the ivy cache">
+		<condition property="dont.ask">
+				<equals arg1="y" arg2="${database.autoclenaup}" />
+		</condition>
+		<delete file="${mwdir.jar.file}" />
+		<delete file="${wikipedia.download.file}" />
+		<antcall target="drop-alltables" />
+		<ivy:cleancache />
+		<!--TODO remove Ivy & mwdumper & Wikipedia dumps & database data but ASK FOR CONFIRMATION unless some automation property is set -->
+	</target>
 
-    <target name="download-mwdumper-tool">
-        <echo message="Downloading mwdumper..." />
-        <get dest="${mwdir.jar.file}" src="${mwdir.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
-    </target>
+	<target name="import-wikipedia" depends="download-mwdumper-tool,download-wikipedia,have-empty-schema" description="--> clean the ivy cache">
+		<!--TODO invoke mwdumper with appropriate parameters -->
+		<!--TODO manage windows execution -->
+		<!--TODO manage postgresql database version-->
+		<exec executable="bash" osfamily="unix">
+			<arg value="-c" />
+			<arg value="java -Xmx1g -Xms1g -jar ${mwdir.jar.file} --format=sql:1.5 ${wikipedia.download.file} | mysql -u${jdbc.username} -p${jdbc.password} ${jdbc.schemaname}" />
+		</exec>
+	</target>
 
-    <target name="download-wikipedia">
-        <echo message="Downloading Wikipedia (will take a while!) ..." />
-        <get dest="${wikipedia.download.file}" src="${wikipedia.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
-        <echo message="... got it!" />
-    </target>
+	<!-- Define filtering applied to SQL scripts -->
+	<filterset id="sql-filters">
+		<filter token="jdbc.schemaname" value="${jdbc.schemaname}" />
+		<!-- add more as needed here -->
+	</filterset>
+
+	<macrodef name="sqlimport">
+		<attribute name="script" />
+		<sequential>
+			<delete dir="${sqlscripts.rootdir}">
+				<include name="*.sql" />
+			</delete>
+			<copy todir="${sqlscripts.rootdir}" filtering="true">
+				<fileset dir="${sqlscripts.rootdir}/${database.lowercasename}" includes="*.sql" />
+				<filterset refid="sql-filters" />
+			</copy>
+			<sqlimport-helper rdbms="${database.lowercasename}" driver.refid="${database.lowercasename}-jdbclib.path.id" sql.script="@{script}" />
+			<delete dir="${sqlscripts.rootdir}">
+				<include name="*.sql" />
+			</delete>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="sqlimport-helper">
+		<attribute name="rdbms" />
+		<attribute name="driver.refid" />
+		<attribute name="sql.script" />
+		<sequential>
+			<sql driver="${jdbc.driver_class}" password="${jdbc.password}" url="${jdbc.url}" userid="${jdbc.username}" rdbms="@{rdbms}" encoding="UTF-8" src="${sqlscripts.rootdir}/@{sql.script}">
+				<classpath refid="@{driver.refid}" />
+			</sql>
+		</sequential>
+	</macrodef>
+
+	<target name="download-mwdumper-tool">
+		<echo message="Downloading mwdumper..." />
+		<get dest="${mwdir.jar.file}" src="${mwdir.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
+	</target>
+
+	<target name="download-wikipedia">
+		<echo message="Downloading Wikipedia (will take a while!) ..." />
+		<get dest="${wikipedia.download.file}" src="${wikipedia.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
+		<echo message="... got it!" />
+	</target>
+
+	<target name="package" depends="download-maven-ant-tasks">
+		<echo>Creating archive index-benchmark.jar</echo>
+
+		<path id="maven-ant-tasks.classpath" path="${maven-ant-tasks.jar.file}" />
+		<typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="antlib:org.apache.maven.artifact.ant" classpathref="maven-ant-tasks.classpath" />
+
+		<artifact:mvn pom="pom.xml" mavenHome="${maven.home}">
+			<arg value="package" />
+		</artifact:mvn>
+	</target>
+
+	<target name="run-indexing" depends="package">
+		<echo>Indexing database ${jdbc.schemaname}</echo>
+
+		<artifact:pom id="mypom" file="pom.xml" />
+		<artifact:dependencies pathid="dependency.classpath" filesetId="dependency.fileset" useScope="runtime">
+			<pom refid="mypom" />
+		</artifact:dependencies>
+		
+		<java fork="true" classname="com.ucieffe.index.WikipediaMassIndexer" maxmemory="2500m">
+			<sysproperty key="DEBUG" value="true" />
+			<arg value="-h" />
+			<jvmarg value="-Xms2500m" />
+			<jvmarg value="-Xmx2500m" />
+			<jvmarg value="-da" />
+			<jvmarg value="-Xverify:none" />
+			<jvmarg value="-XX:+CMSIncrementalMode" />
+			<jvmarg value="-XX:+UseConcMarkSweepGC" />
+			<classpath>
+				<pathelement location="${mypom.build.directory}/${mypom.artifactId}-${mypom.version}.jar" />
+				<path refid="dependency.classpath" />
+			</classpath>
+		</java>
+	</target>
+	
 
 </project>
 

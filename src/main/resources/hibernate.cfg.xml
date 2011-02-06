@@ -24,11 +24,11 @@ MA  02110-1301, USA.
 "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
 <hibernate-configuration>
     <session-factory>
-        <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
-        <property name="hibernate.connection.password">jboss-password</property>
-        <property name="hibernate.connection.url">jdbc:mysql://localhost/jbossdb?useCursorFetch=true&amp;useServerPrepStmts=true</property>
-        <property name="hibernate.connection.username">jboss-username</property>
-        <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+        <property name="hibernate.connection.driver_class">${jdbc.driver_class}</property>
+        <property name="hibernate.connection.password">${jdbc.password}</property>
+        <property name="hibernate.connection.url">${jdbc.url}</property>
+        <property name="hibernate.connection.username">${jdbc.username}</property>
+        <property name="hibernate.dialect">${hibernate.dialect}</property>
         <property name="hibernate.search.default.indexwriter.batch.ram_buffer_size">50</property>
         <property name="hibernate.search.default.indexwriter.batch.merge_factor">30</property>
         <property name="hibernate.search.default.directory_provider">infinispan</property>

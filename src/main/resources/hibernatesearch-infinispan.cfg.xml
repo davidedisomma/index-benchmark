@@ -139,10 +139,10 @@ MA  02110-1301, USA.
                     <property name="createTableOnStart" value="true"/>
 
                     <!-- Settings for MySQL: -->
-                    <property name="driverClass" value="com.mysql.jdbc.Driver"/>
-                    <property name="connectionUrl" value="jdbc:mysql://localhost/jbossdb?useCursorFetch=true&amp;useServerPrepStmts=true"/>
-                    <property name="userName" value="jboss-username"/>
-                    <property name="password" value="jboss-password"/>
+                    <property name="driverClass"  value="${jdbc.driver_class}" />
+                    <property name="connectionUrl" value="${jdbc.url}"/>
+                    <property name="userName" value="${jdbc.username}"/>
+                    <property name="password" value="${jdbc.password}"/>
                     
                     <property name="connectionFactoryClass"
                               value="org.infinispan.loaders.jdbc.connectionfactory.PooledConnectionFactory"/>
@@ -185,10 +185,10 @@ MA  02110-1301, USA.
                     <property name="createTableOnStart" value="true"/>
 
                     <!-- Settings for MySQL: -->
-                    <property name="driverClass" value="com.mysql.jdbc.Driver"/>
-                    <property name="connectionUrl" value="jdbc:mysql://localhost/jbossdb?useCursorFetch=true&amp;useServerPrepStmts=true"/>
-                    <property name="userName" value="jboss-username"/>
-                    <property name="password" value="jboss-password"/>
+                    <property name="driverClass"  value="${jdbc.driver_class}" />
+                    <property name="connectionUrl" value="${jdbc.url}"/>
+                    <property name="userName" value="${jdbc.username}"/>
+                    <property name="password" value="${jdbc.password}"/>
 
                     <property name="connectionFactoryClass"
                               value="org.infinispan.loaders.jdbc.connectionfactory.PooledConnectionFactory"/>
