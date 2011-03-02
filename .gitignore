@@ -11,7 +11,9 @@ buildSrc/.gradle
 /build
 */build
 downloads-cache
-index
+/index
+/indexes
+test-output
 
 # IntelliJ specific files/directories
 /out

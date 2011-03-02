@@ -23,7 +23,7 @@
 	<property name="ivy.install.version" value="2.2.0" />
 	<property name="maven-ant-tasks.install.version" value="2.1.1" />
 
-	<property name="build.dir" value="build" />
+	<!--property name="build.dir" value="build" /-->
 	<property name="cache.dir" value="${basedir}/downloads-cache" />
 	<property name="sqlscripts.rootdir" value="${basedir}/sql" />
 	<property name="ivy.jar.file" value="${cache.dir}/ivy.jar" />
@@ -32,7 +32,7 @@
 	<property name="mwdir.download.url" value="http://downloads.dbpedia.org/mwdumper.jar" />
 	<property name="wikipedia.download.url" value="http://download.wikimedia.org/enwiki/20101011/enwiki-20101011-pages-meta-current.xml.bz2" />
 	<property name="wikipedia.download.file" value="${cache.dir}/wiki-pages.xml.bz2" />
-	<property name="src.dir" value="src" />
+	<!--property name="src.dir" value="src" /-->
 
 	<property file="db.properties" />
 
@@ -77,12 +77,12 @@
 		<sqlimport script="indexes.sql" />
 	</target>
 
-	<target name="clean" description="--> clean the project">
+	<!--target name="clean" description="-> clean the project">
 		<delete includeemptydirs="true" quiet="true">
 			<fileset dir="${src.dir}" />
 			<fileset dir="${build.dir}" />
 		</delete>
-	</target>
+	</target-->
 
 	<target name="ask-cleaning" unless="dont.ask">
 		<input message="All downloaded files and all DB data are going to be deleted. Continue (y/n)?" validargs="y,n" addproperty="do.delete" />
@@ -92,7 +92,7 @@
 		<fail if="do.abort">Build aborted by user.</fail>
 	</target>
 
-	<target name="clean-cache" depends="ask-cleaning,install-ivy" description="--> clean the ivy cache">
+	<target name="clean" depends="ask-cleaning,install-ivy" description="--> clean the ivy cache">
 		<condition property="dont.ask">
 				<equals arg1="y" arg2="${database.autoclenaup}" />
 		</condition>
@@ -156,6 +156,7 @@
 		<echo message="Downloading Wikipedia (will take a while!) ..." />
 		<get dest="${wikipedia.download.file}" src="${wikipedia.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
 		<echo message="... got it!" />
+		<!-- TODO aggiungere checksum task x verificare che il file sia corretto -->
 	</target>
 
 	<target name="package" depends="download-maven-ant-tasks">
@@ -177,8 +178,8 @@
 			<pom refid="mypom" />
 		</artifact:dependencies>
 		
-		<java fork="true" classname="com.ucieffe.index.WikipediaMassIndexer" maxmemory="2500m">
-			<sysproperty key="DEBUG" value="true" />
+		<java fork="true" classname="com.ucieffe.index.WikipediaMassIndexer">
+			<!--sysproperty key="DEBUG" value="true" /-->
 			<arg value="-h" />
 			<jvmarg value="-Xms2500m" />
 			<jvmarg value="-Xmx2500m" />
