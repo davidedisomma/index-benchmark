@@ -1,4 +1,4 @@
-package org.ucieffe.benchmark;
+package org.infinispan.lucene.profiling;
 
 import java.io.IOException;
 import java.io.StringReader;

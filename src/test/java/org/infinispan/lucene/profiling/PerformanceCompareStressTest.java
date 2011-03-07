@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.ucieffe.benchmark;
+package org.infinispan.lucene.profiling;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +34,7 @@ import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.Search;
 import org.infinispan.Cache;
 import org.infinispan.lucene.InfinispanDirectory;
+import org.infinispan.lucene.CacheTestSupport;
 import org.infinispan.manager.CacheContainer;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;

@@ -99,6 +99,7 @@
 		<delete file="${mwdir.jar.file}" />
 		<delete file="${wikipedia.download.file}" />
 		<antcall target="drop-alltables" />
+		<antcall target="clean-code" />
 		<ivy:cleancache />
 		<!--TODO remove Ivy & mwdumper & Wikipedia dumps & database data but ASK FOR CONFIRMATION unless some automation property is set -->
 	</target>
@@ -179,7 +180,6 @@
 		</artifact:dependencies>
 		
 		<java fork="true" classname="com.ucieffe.index.WikipediaMassIndexer">
-			<!--sysproperty key="DEBUG" value="true" /-->
 			<arg value="-h" />
 			<jvmarg value="-Xms2500m" />
 			<jvmarg value="-Xmx2500m" />
@@ -194,6 +194,76 @@
 		</java>
 	</target>
 	
+	<!--target name="clean-code">
+		<echo>Cleaning build directory ${build.dir}</echo>
+		<delete dir="${build.dir}" />
+		<delete dir="${dist.dir}" />
+	</target>
+
+	<target name="compile" depends="clean-code">
+		<echo>Compiling sources in build directory ${build.dir}</echo>
+		<mkdir dir="${build.dir}" />
+		<javac srcdir="${src.main.dir}" destdir="${build.dir}">
+			<classpath>
+				<path refid="dependency.classpath" />
+			</classpath>
+		</javac>
+		<copy tofile="${build.dir}/META-INF/persistence.xml" file="${src.res.dir}/META-INF/persistence.xml" overwrite="true" />
+		<copy tofile="${build.dir}/log4j.xml" file="${src.res.dir}/log4j.xml" overwrite="true" />
+		<copy tofile="${build.dir}/hibernatesearch-infinispan.cfg.xml" file="${src.res.dir}/hibernatesearch-infinispan.cfg.xml" overwrite="true" />
+		<copy tofile="${build.dir}/hibernate.cfg.xml" file="${src.res.dir}/hibernate.cfg.xml" overwrite="true">
+			<filterset>
+				<filter token="jdbc.driver_class" value="${jdbc.driver_class}" />
+				<filter token="jdbc.username"     value="${jdbc.username}" />
+				<filter token="jdbc.password"     value="${jdbc.password}" />
+				<filter token="jdbc.url"          value="${jdbc.url}" />
+				<filter token="hibernate.dialect" value="${hibernate.dialect}" />
+			</filterset>
+		</copy>
+	</target>
+
+	<target name="archive" depends="compile">
+		<echo>Creating archive index-benchmarking.jar</echo>
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}/index-benchmarking.jar" basedir="${build.dir}">
+		    <manifest>
+		      <attribute name="Main-Class"
+		            value="com.ucieffe.index.WikipediaMassIndexer"/>
+		        <attribute name="Built-By" value="${user.name}"/-->
+		        <!-- Information about the program itself -->
+		        <!--attribute name="Implementation-Vendor" value="ACME inc."/>
+		        <attribute name="Implementation-Title" value="index-benchmark"/>
+		        <attribute name="Implementation-Version" value="1.0.0"/>
+		    </manifest>
+		</jar>
+	</target>
+
+	<target name="run-indexing" depends="archive">
+
+		<artifact:pom id="mypom" file="pom.xml" />
+		<artifact:dependencies pathid="dependency.classpath" filesetId="dependency.fileset" useScope="runtime">
+			<pom refid="mypom" />
+		</artifact:dependencies>
+		
+		<java fork="true" classname="com.ucieffe.index.WikipediaMassIndexer">
+			<arg value="-h" />
+			<jvmarg value="-Xms2500m" />
+			<jvmarg value="-Xmx2500m" />
+			<jvmarg value="-da" />
+			<jvmarg value="-Xverify:none" />
+			<jvmarg value="-XX:+CMSIncrementalMode" />
+			<jvmarg value="-XX:+UseConcMarkSweepGC" />
+			<classpath>
+				<pathelement location="${mypom.build.directory}/${mypom.artifactId}-${mypom.version}.jar" />
+				<path refid="dependency.classpath" />
+			</classpath>
+		</java>
+	</target-->
+
+
+	<target name="help">
+		<echo>TODO ${ant.version}</echo>
+	</target>
 
 </project>
 

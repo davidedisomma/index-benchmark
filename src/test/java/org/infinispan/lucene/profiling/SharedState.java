@@ -1,4 +1,4 @@
-package org.ucieffe.benchmark;
+package org.infinispan.lucene.profiling;
 
 import java.util.List;
 import java.util.concurrent.BlockingDeque;

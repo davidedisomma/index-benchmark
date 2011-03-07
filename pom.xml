@@ -34,13 +34,15 @@
 		</dependency>
 		<dependency>
 			<groupId>org.infinispan</groupId>
-			<artifactId>infinispan-lucene-directory</artifactId>
+			<artifactId>infinispan-core</artifactId>
 			<version>${infinispanVersion}</version>
+			<type>test-jar</type>
 		</dependency>
 		<dependency>
 			<groupId>org.infinispan</groupId>
-			<artifactId>infinispan-core</artifactId>
+			<artifactId>infinispan-lucene-directory</artifactId>
 			<version>${infinispanVersion}</version>
+			<type>test-jar</type>
 		</dependency>
 		<dependency>
 			<groupId>org.infinispan</groupId>

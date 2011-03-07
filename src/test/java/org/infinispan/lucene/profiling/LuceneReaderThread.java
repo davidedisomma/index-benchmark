@@ -1,4 +1,4 @@
-package org.ucieffe.benchmark;
+package org.infinispan.lucene.profiling;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -19,6 +19,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
+import org.infinispan.lucene.profiling.LuceneUserThread;
 
 import com.ucieffe.model.Text;
 
