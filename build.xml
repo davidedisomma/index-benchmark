@@ -77,13 +77,6 @@
 		<sqlimport script="indexes.sql" />
 	</target>
 
-	<!--target name="clean" description="-> clean the project">
-		<delete includeemptydirs="true" quiet="true">
-			<fileset dir="${src.dir}" />
-			<fileset dir="${build.dir}" />
-		</delete>
-	</target-->
-
 	<target name="ask-cleaning" unless="dont.ask">
 		<input message="All downloaded files and all DB data are going to be deleted. Continue (y/n)?" validargs="y,n" addproperty="do.delete" />
 		<condition property="do.abort">
@@ -99,7 +92,7 @@
 		<delete file="${mwdir.jar.file}" />
 		<delete file="${wikipedia.download.file}" />
 		<antcall target="drop-alltables" />
-		<antcall target="clean-code" />
+		<!--antcall target="clean-code" /-->
 		<ivy:cleancache />
 		<!--TODO remove Ivy & mwdumper & Wikipedia dumps & database data but ASK FOR CONFIRMATION unless some automation property is set -->
 	</target>
