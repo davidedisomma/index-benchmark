@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ JBoss, Home of Professional Open Source
+Copyright 2011 Red Hat Inc. and/or its affiliates and other contributors
+as indicated by the @authors tag. All rights reserved.
+See the copyright.txt in the distribution for a
+full listing of individual contributors.
+
+This copyrighted material is made available to anyone wishing to use,
+modify, copy, or redistribute it subject to the terms and conditions
+of the GNU Lesser General Public License, v. 2.1.
+This program is distributed in the hope that it will be useful, but WITHOUT A
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
+You should have received a copy of the GNU Lesser General Public License,
+v.2.1 along with this distribution; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+MA  02110-1301, USA.
+
+   Copyright (C) 2011 Sanne Grinovero - sanne@hibernate.org
+-->
+<infinispan
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="urn:infinispan:config:4.2 http://www.infinispan.org/schemas/infinispan-config-4.2.xsd"
+    xmlns="urn:infinispan:config:4.2">
+
+    <!-- *************************** -->
+    <!-- System-wide global settings -->
+    <!-- *************************** -->
+
+    <global>
+
+        <!-- Duplicate domains are allowed so that multiple deployments with default configuration 
+            of Hibernate Search applications work - if possible it would be better to use JNDI to share 
+            the CacheManager across applications -->
+        <globalJmxStatistics
+            enabled="true"
+            cacheManagerName="HibernateSearch"
+            allowDuplicateDomains="true" />
+
+        <!-- If the transport is omitted, there is no way to create distributed or clustered 
+            caches. There is no added cost to defining a transport but not creating a cache that uses one, 
+            since the transport is created and initialized lazily. -->
+        <transport
+            clusterName="HibernateSearch-Infinispan-cluster"
+            distributedSyncTimeout="50000">
+            <!-- Note that the JGroups transport uses sensible defaults if no configuration 
+                property is defined. See the JGroupsTransport javadocs for more flags -->
+        </transport>
+
+        <!-- Used to register JVM shutdown hooks. hookBehavior: DEFAULT, REGISTER, DONT_REGISTER. 
+            Hibernate Search takes care to stop the CacheManager so registering is not needed -->
+        <shutdown
+            hookBehavior="DONT_REGISTER" />
+
+    </global>
+
+    <!-- *************************** -->
+    <!-- Default "template" settings -->
+    <!-- *************************** -->
+
+    <default>
+
+        <locking
+            lockAcquisitionTimeout="20000"
+            writeSkewCheck="false"
+            concurrencyLevel="500"
+            useLockStriping="false" />
+
+        <lazyDeserialization
+            enabled="false" />
+
+        <!-- Invocation batching is required for use with the Lucene Directory -->
+        <invocationBatching
+            enabled="true" />
+
+        <!-- This element specifies that the cache is clustered. modes supported: distribution 
+            (d), replication (r) or invalidation (i). Don't use invalidation to store Lucene indexes (as 
+            with Hibernate Search DirectoryProvider). Replication is recommended for best performance of 
+            Lucene indexes, but make sure you have enough memory to store the index in your heap.
+            Also distribution scales much better than replication on high number of nodes in the cluster. -->
+        <clustering
+            mode="replication">
+
+            <!-- Prefer loading all data at startup than later -->
+            <stateRetrieval
+                timeout="20000"
+                logFlushTimeout="30000"
+                fetchInMemoryState="true"
+                alwaysProvideInMemoryState="true" />
+
+            <!-- Network calls are synchronous by default -->
+            <sync
+                replTimeout="20000" />
+        </clustering>
+
+        <jmxStatistics
+            enabled="true" />
+
+        <eviction
+            maxEntries="-1"
+            strategy="NONE" />
+
+        <expiration
+            maxIdle="-1" />
+
+    </default>
+
+    <!-- ******************************************************************************* -->
+    <!-- Individually configured "named" caches.                                         -->
+    <!--                                                                                 -->
+    <!-- While default configuration happens to be fine with similar settings across the -->
+    <!-- three caches, they should generally be different in a production environment.   -->
+    <!--                                                                                 -->
+    <!-- Current settings could easily lead to OutOfMemory exception as a CacheStore     -->
+    <!-- should be enabled, and maybe distribution is desired.                           -->
+    <!-- ******************************************************************************* -->
+
+    <!-- *************************************** -->
+    <!--  Cache to store Lucene's file metadata  -->
+    <!-- *************************************** -->
+    <namedCache
+        name="LuceneIndexesMetadata">
+        <clustering
+            mode="replication">
+            <stateRetrieval
+                fetchInMemoryState="true"
+                logFlushTimeout="30000" />
+            <sync
+                replTimeout="25000" />
+        </clustering>
+        <loaders passivation="false" shared="true" preload="true">
+            <loader class="org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore" fetchPersistentState="true"
+                    ignoreModifications="false" purgeOnStartup="false">
+
+                <!-- See the documentation for more configuration examples and flags. -->
+                <properties>
+                    <property name="key2StringMapperClass" value="org.infinispan.lucene.LuceneKey2StringMapper"/>
+                    <property name="createTableOnStart" value="true"/>
+
+                    <!-- Settings for MySQL: -->
+                    <property name="driverClass"  value="@jdbc.driver_class@" />
+                    <property name="connectionUrl" value="@jdbc.url@"/>
+                    <property name="userName" value="@jdbc.username@"/>
+                    <property name="password" value="@jdbc.password@"/>
+                    
+                    <property name="connectionFactoryClass"
+                              value="org.infinispan.loaders.jdbc.connectionfactory.PooledConnectionFactory"/>
+                    
+                    <property name="dataColumnType" value="MEDIUMBLOB"/>
+
+                    <property name="idColumnType" value="VARCHAR(256)"/>
+                    <property name="idColumnName" value="idCol"/>
+                    <property name="dataColumnName" value="dataCol"/>
+                    <property name="stringsTableNamePrefix" value="HibernateSearch"/>
+
+                    <property name="timestampColumnName" value="timestampCol"/>
+                    <property name="timestampColumnType" value="BIGINT"/>
+                </properties>
+                <async enabled="true" flushLockTimeout="25000" shutdownTimeout="7200" threadPoolSize="5"/>
+            </loader>
+        </loaders>
+    </namedCache>
+
+    <!-- **************************** -->
+    <!--  Cache to store Lucene data  -->
+    <!-- **************************** -->
+    <namedCache
+        name="LuceneIndexesData">
+        <clustering
+            mode="replication">
+            <stateRetrieval
+                fetchInMemoryState="true"
+                logFlushTimeout="30000" />
+            <sync
+                replTimeout="25000" />
+        </clustering>
+        <loaders passivation="false" shared="true" preload="true">
+            <loader class="org.infinispan.loaders.jdbc.stringbased.JdbcStringBasedCacheStore" fetchPersistentState="true"
+                    ignoreModifications="false" purgeOnStartup="false">
+
+                <!-- See the documentation for more configuration examples and flags. -->
+                <properties>
+                    <property name="key2StringMapperClass" value="org.infinispan.lucene.LuceneKey2StringMapper"/>
+                    <property name="createTableOnStart" value="true"/>
+
+                    <!-- Settings for MySQL: -->
+                    <property name="driverClass"  value="@jdbc.driver_class@" />
+                    <property name="connectionUrl" value="@jdbc.url@"/>
+                    <property name="userName" value="@jdbc.username@"/>
+                    <property name="password" value="@jdbc.password@"/>
+
+                    <property name="connectionFactoryClass"
+                              value="org.infinispan.loaders.jdbc.connectionfactory.PooledConnectionFactory"/>
+
+                    <property name="dataColumnType" value="MEDIUMBLOB"/>
+
+                    <property name="idColumnType" value="VARCHAR(256)"/>
+                    <property name="idColumnName" value="idCol"/>
+                    <property name="dataColumnName" value="dataCol"/>
+                    <property name="stringsTableNamePrefix" value="HibernateSearch"/>
+
+                    <property name="timestampColumnName" value="timestampCol"/>
+                    <property name="timestampColumnType" value="BIGINT"/>
+                </properties>
+                <async enabled="true" flushLockTimeout="25000" shutdownTimeout="7200" threadPoolSize="5"/>
+            </loader>
+        </loaders>
+    </namedCache>
+
+    <!-- ***************************** -->
+    <!--  Cache to store Lucene locks  -->
+    <!-- ***************************** -->
+    <namedCache
+        name="LuceneIndexesLocking">
+        <clustering
+            mode="replication">
+            <stateRetrieval
+                fetchInMemoryState="true"
+                logFlushTimeout="30000" />
+            <sync
+                replTimeout="25000" />
+        </clustering>
+    </namedCache>
+
+</infinispan>
