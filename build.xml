@@ -23,7 +23,6 @@
 	<property name="ivy.install.version" value="2.2.0" />
 	<property name="maven-ant-tasks.install.version" value="2.1.1" />
 
-	<!--property name="build.dir" value="build" /-->
 	<property name="cache.dir" value="${basedir}/downloads-cache" />
 	<property name="sqlscripts.rootdir" value="${basedir}/sql" />
 	<property name="ivy.jar.file" value="${cache.dir}/ivy.jar" />
@@ -32,10 +31,15 @@
 	<property name="mwdir.download.url" value="http://downloads.dbpedia.org/mwdumper.jar" />
 	<property name="wikipedia.download.url" value="http://download.wikimedia.org/enwiki/20101011/enwiki-20101011-pages-meta-current.xml.bz2" />
 	<property name="wikipedia.download.file" value="${cache.dir}/wiki-pages.xml.bz2" />
-	<!--property name="src.dir" value="src" /-->
+	<property name="build.dir" value="build" />
+	<property name="dist.dir" value="dist" />
+	<property name="src.dir" value="src" />
+	<property name="res.main.src.dir" value="${src.dir}/main/resources" />
+	<property name="java.main.src.dir" value="${src.dir}/main/java" />
+
+	<property name="classname.main" value="com.ucieffe.index.WikipediaMassIndexer" />
 
 	<property file="db.properties" />
-
 
 
 	<target name="download-ivy">
@@ -87,12 +91,12 @@
 
 	<target name="clean" depends="ask-cleaning,install-ivy" description="--> clean the ivy cache">
 		<condition property="dont.ask">
-				<equals arg1="y" arg2="${database.autoclenaup}" />
+			<equals arg1="y" arg2="${database.autoclenaup}" />
 		</condition>
 		<delete file="${mwdir.jar.file}" />
 		<delete file="${wikipedia.download.file}" />
 		<antcall target="drop-alltables" />
-		<!--antcall target="clean-code" /-->
+		<antcall target="clean-binary-files" />
 		<ivy:cleancache />
 		<!--TODO remove Ivy & mwdumper & Wikipedia dumps & database data but ASK FOR CONFIRMATION unless some automation property is set -->
 	</target>
@@ -129,13 +133,13 @@
 			</delete>
 		</sequential>
 	</macrodef>
-	
+
 	<macrodef name="sqlimport-helper">
 		<attribute name="rdbms" />
 		<attribute name="driver.refid" />
 		<attribute name="sql.script" />
 		<sequential>
-			<sql driver="${jdbc.driver_class}" password="${jdbc.password}" url="${jdbc.url}" userid="${jdbc.username}" rdbms="@{rdbms}" encoding="UTF-8" src="${sqlscripts.rootdir}/@{sql.script}">
+			<sql driver="${jdbc.driver_class}" password="${jdbc.password}" url="${jdbc.url}" userid="${jdbc.username}" rdbms="@{rdbms}" encoding="UTF-8" src="${sqlscripts.rootdir}/@{sql.script}" autocommit="true">
 				<classpath refid="@{driver.refid}" />
 			</sql>
 		</sequential>
@@ -150,95 +154,80 @@
 		<echo message="Downloading Wikipedia (will take a while!) ..." />
 		<get dest="${wikipedia.download.file}" src="${wikipedia.download.url}" ignoreerrors="false" skipexisting="true" verbose="true" />
 		<echo message="... got it!" />
-		<!-- TODO aggiungere checksum task x verificare che il file sia corretto -->
+		<!-- TODO add checksum task to verify correctness of file downloaded-->
 	</target>
 
-	<target name="package" depends="download-maven-ant-tasks">
-		<echo>Creating archive index-benchmark.jar</echo>
-
-		<path id="maven-ant-tasks.classpath" path="${maven-ant-tasks.jar.file}" />
-		<typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="antlib:org.apache.maven.artifact.ant" classpathref="maven-ant-tasks.classpath" />
-
-		<artifact:mvn pom="pom.xml" mavenHome="${maven.home}">
-			<arg value="package" />
-		</artifact:mvn>
-	</target>
-
-	<target name="run-indexing" depends="package">
-		<echo>Indexing database ${jdbc.schemaname}</echo>
-
-		<artifact:pom id="mypom" file="pom.xml" />
-		<artifact:dependencies pathid="dependency.classpath" filesetId="dependency.fileset" useScope="runtime">
-			<pom refid="mypom" />
-		</artifact:dependencies>
-		
-		<java fork="true" classname="com.ucieffe.index.WikipediaMassIndexer">
-			<arg value="-h" />
-			<jvmarg value="-Xms2500m" />
-			<jvmarg value="-Xmx2500m" />
-			<jvmarg value="-da" />
-			<jvmarg value="-Xverify:none" />
-			<jvmarg value="-XX:+CMSIncrementalMode" />
-			<jvmarg value="-XX:+UseConcMarkSweepGC" />
-			<classpath>
-				<pathelement location="${mypom.build.directory}/${mypom.artifactId}-${mypom.version}.jar" />
-				<path refid="dependency.classpath" />
-			</classpath>
-		</java>
-	</target>
-	
-	<!--target name="clean-code">
-		<echo>Cleaning build directory ${build.dir}</echo>
+	<target name="clean-binary-files">
+		<echo>Cleaning build directory ${build.dir} and ${dist.dir}</echo>
 		<delete dir="${build.dir}" />
 		<delete dir="${dist.dir}" />
 	</target>
 
-	<target name="compile" depends="clean-code">
-		<echo>Compiling sources in build directory ${build.dir}</echo>
-		<mkdir dir="${build.dir}" />
-		<javac srcdir="${src.main.dir}" destdir="${build.dir}">
-			<classpath>
-				<path refid="dependency.classpath" />
-			</classpath>
-		</javac>
-		<copy tofile="${build.dir}/META-INF/persistence.xml" file="${src.res.dir}/META-INF/persistence.xml" overwrite="true" />
-		<copy tofile="${build.dir}/log4j.xml" file="${src.res.dir}/log4j.xml" overwrite="true" />
-		<copy tofile="${build.dir}/hibernatesearch-infinispan.cfg.xml" file="${src.res.dir}/hibernatesearch-infinispan.cfg.xml" overwrite="true" />
-		<copy tofile="${build.dir}/hibernate.cfg.xml" file="${src.res.dir}/hibernate.cfg.xml" overwrite="true">
+	<target name="create-hibernate-config">
+		<copy tofile="${res.main.src.dir}/hibernate.cfg.xml" file="${res.main.src.dir}/hibernate.cfg.template.xml" overwrite="true">
 			<filterset>
 				<filter token="jdbc.driver_class" value="${jdbc.driver_class}" />
-				<filter token="jdbc.username"     value="${jdbc.username}" />
-				<filter token="jdbc.password"     value="${jdbc.password}" />
-				<filter token="jdbc.url"          value="${jdbc.url}" />
+				<filter token="jdbc.username" value="${jdbc.username}" />
+				<filter token="jdbc.password" value="${jdbc.password}" />
+				<filter token="jdbc.url" value="${jdbc.url}" />
 				<filter token="hibernate.dialect" value="${hibernate.dialect}" />
+			</filterset>
+		</copy>
+		<copy tofile="${res.main.src.dir}/hibernatesearch-infinispan.cfg.xml" file="${res.main.src.dir}/hibernatesearch-infinispan.cfg.template.xml" overwrite="true">
+			<filterset>
+				<filter token="jdbc.driver_class" value="${jdbc.driver_class}" />
+				<filter token="jdbc.username" value="${jdbc.username}" />
+				<filter token="jdbc.password" value="${jdbc.password}" />
+				<filter token="jdbc.url" value="${jdbc.url}" />
 			</filterset>
 		</copy>
 	</target>
 
-	<target name="archive" depends="compile">
-		<echo>Creating archive index-benchmarking.jar</echo>
-		<mkdir dir="${dist.dir}" />
-		<jar destfile="${dist.dir}/index-benchmarking.jar" basedir="${build.dir}">
-		    <manifest>
-		      <attribute name="Main-Class"
-		            value="com.ucieffe.index.WikipediaMassIndexer"/>
-		        <attribute name="Built-By" value="${user.name}"/-->
-		        <!-- Information about the program itself -->
-		        <!--attribute name="Implementation-Vendor" value="ACME inc."/>
-		        <attribute name="Implementation-Title" value="index-benchmark"/>
-		        <attribute name="Implementation-Version" value="1.0.0"/>
-		    </manifest>
-		</jar>
-	</target>
+	<target name="compile" depends="clean-binary-files, create-hibernate-config">
+		<echo>Compiling sources in build directory ${build.dir}</echo>
+		<mkdir dir="${build.dir}" />
 
-	<target name="run-indexing" depends="archive">
+		<path id="maven-ant-tasks.classpath" path="${maven-ant-tasks.jar.file}" />
+		<typedef resource="org/apache/maven/artifact/ant/antlib.xml" uri="antlib:org.apache.maven.artifact.ant" classpathref="maven-ant-tasks.classpath" />
 
 		<artifact:pom id="mypom" file="pom.xml" />
 		<artifact:dependencies pathid="dependency.classpath" filesetId="dependency.fileset" useScope="runtime">
 			<pom refid="mypom" />
 		</artifact:dependencies>
-		
-		<java fork="true" classname="com.ucieffe.index.WikipediaMassIndexer">
+
+
+		<javac srcdir="${java.main.src.dir}" destdir="${build.dir}">
+			<classpath>
+				<path refid="dependency.classpath" />
+			</classpath>
+		</javac>
+		<copy tofile="${build.dir}/META-INF/persistence.xml" file="${res.main.src.dir}/META-INF/persistence.xml" overwrite="true" />
+		<copy tofile="${build.dir}/log4j.xml" file="${res.main.src.dir}/log4j.xml" overwrite="true" />
+		<copy tofile="${build.dir}/hibernatesearch-infinispan.cfg.xml" file="${res.main.src.dir}/hibernatesearch-infinispan.cfg.xml" overwrite="true" />
+		<copy tofile="${build.dir}/hibernate.cfg.xml" file="${res.main.src.dir}/hibernate.cfg.xml" overwrite="true" />
+	</target>
+
+	<target name="archive" depends="compile">
+		<echo>Creating archive ${mypom.artifactId}-${mypom.version}.jar in ${dist.dir} directory</echo>
+		<mkdir dir="${dist.dir}" />
+		<jar destfile="${dist.dir}/${mypom.artifactId}-${mypom.version}.jar" basedir="${build.dir}">
+			<manifest>
+				<attribute name="Main-Class" value="${classname.main}" />
+				<attribute name="Built-By" value="${user.name}" />
+				<!-- Information about the program itself -->
+				<attribute name="Implementation-Title" value="${mypom.artifactId}" />
+				<attribute name="Implementation-Version" value="${mypom.version}" />
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="run-indexing" depends="archive">
+		<artifact:pom id="mypom" file="pom.xml" />
+		<artifact:dependencies pathid="dependency.classpath" filesetId="dependency.fileset" useScope="runtime">
+			<pom refid="mypom" />
+		</artifact:dependencies>
+
+		<java fork="true" dir="${dist.dir}" classname="${classname.main}">
 			<arg value="-h" />
 			<jvmarg value="-Xms2500m" />
 			<jvmarg value="-Xmx2500m" />
@@ -247,11 +236,11 @@
 			<jvmarg value="-XX:+CMSIncrementalMode" />
 			<jvmarg value="-XX:+UseConcMarkSweepGC" />
 			<classpath>
-				<pathelement location="${mypom.build.directory}/${mypom.artifactId}-${mypom.version}.jar" />
+				<pathelement location="${dist.dir}/${mypom.artifactId}-${mypom.version}.jar" />
 				<path refid="dependency.classpath" />
 			</classpath>
 		</java>
-	</target-->
+	</target>
 
 
 	<target name="help">

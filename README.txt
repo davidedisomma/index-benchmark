@@ -25,7 +25,9 @@ The build.xml ant file has the following main tasks:
 
 4 - run-indexing: it creates Apache Lucene index from database content using hibernate-search library.
 
-5 - clean: it cleans the environment. In particular it deletes the reference wikipedia dump and mwdumper.jar library 
+5 - create-hibernate-config: it creates hibernate.cfg.xml and hibernatesearch-infinispan.cfg.xml configuration files using the content of db.properties file.
+
+6 - clean: it cleans the environment. In particular it deletes the reference wikipedia dump and mwdumper.jar library 
 	and get and apply the database schema.
 	Before to do this, it asks confirmation to the user. If you do not want to be asked for confirmation, you have to add 'database.autoclenaup=n' property
 	to db.properties file.
